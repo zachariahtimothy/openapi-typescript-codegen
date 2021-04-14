@@ -14,6 +14,7 @@ export type Options = {
     input: string | Record<string, any>;
     output: string;
     httpClient?: HttpClient;
+    serviceUrlInjectToken?: string;
     useOptions?: boolean;
     useUnionTypes?: boolean;
     exportCore?: boolean;
@@ -31,6 +32,7 @@ export type Options = {
  * @param input The relative location of the OpenAPI spec
  * @param output The relative location of the output directory
  * @param httpClient The selected httpClient (fetch or XHR)
+ * @param serviceUrlInjectToken Service injection token for Service constructor
  * @param useOptions Use options or arguments functions
  * @param useUnionTypes Use union types instead of enums
  * @param exportCore: Generate core client classes
@@ -50,6 +52,7 @@ export async function generate({
     exportServices = true,
     exportModels = true,
     exportSchemas = false,
+    serviceUrlInjectToken,
     request,
     write = true,
 }: Options): Promise<void> {
@@ -64,7 +67,7 @@ export async function generate({
     switch (openApiVersion) {
         case OpenApiVersion.V2: {
             const client = parseV2(openApi);
-            const clientFinal = postProcessClient(client);
+            const clientFinal = postProcessClient(client, { serviceUrlInjectToken });
             if (!write) break;
             await writeClient(clientFinal, templates, output, httpClient, useOptions, useUnionTypes, exportCore, exportServices, exportModels, exportSchemas, request);
             break;
@@ -72,7 +75,7 @@ export async function generate({
 
         case OpenApiVersion.V3: {
             const client = parseV3(openApi);
-            const clientFinal = postProcessClient(client);
+            const clientFinal = postProcessClient(client, { serviceUrlInjectToken });
             if (!write) break;
             await writeClient(clientFinal, templates, output, httpClient, useOptions, useUnionTypes, exportCore, exportServices, exportModels, exportSchemas, request);
             break;

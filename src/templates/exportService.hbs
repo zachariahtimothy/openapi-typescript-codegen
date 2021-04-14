@@ -1,88 +1,123 @@
 {{>header}}
 
+import { RESTDataSource } from 'apollo-datasource-rest';
+import { Inject, Injectable } from 'graphql-modules';
+import { Context } from '../../../lib/utils/context';
+{{#if serviceUrlInjectToken}}
+import { {{serviceUrlInjectToken}} } from '../../../lib/injectableTokens';
+{{/if}}
+{{#if @root.useVersion}}
+import { OpenAPI } from '../core/OpenAPI';
+{{/if}}
 {{#if imports}}
 {{#each imports}}
 import type { {{{this}}} } from '../models/{{{this}}}';
 {{/each}}
 {{/if}}
-import { request as __request } from '../core/request';
-{{#if @root.useVersion}}
-import { OpenAPI } from '../core/OpenAPI';
-{{/if}}
 
-export class {{{name}}} {
 
-    {{#each operations}}
-    /**
-    {{#if deprecated}}
-     * @deprecated
-    {{/if}}
-    {{#if summary}}
-     * {{{summary}}}
-    {{/if}}
-    {{#if description}}
-     * {{{description}}}
-    {{/if}}
-    {{#unless @root.useOptions}}
-    {{#if parameters}}
-    {{#each parameters}}
-     * @param {{{name}}} {{{description}}}
-    {{/each}}
-    {{/if}}
-    {{/unless}}
-    {{#each results}}
-     * @returns {{{type}}} {{{description}}}
-    {{/each}}
-     * @throws ApiError
-     */
-    public static async {{{name}}}({{>parameters}}): Promise<{{>result}}> {
-        const result = await __request({
-            method: '{{{method}}}',
-            path: `{{{path}}}`,
-            {{#if parametersCookie}}
-            cookies: {
-                {{#each parametersCookie}}
-                '{{{prop}}}': {{{name}}},
-                {{/each}}
-            },
-            {{/if}}
-            {{#if parametersHeader}}
-            headers: {
-                {{#each parametersHeader}}
-                '{{{prop}}}': {{{name}}},
-                {{/each}}
-            },
-            {{/if}}
-            {{#if parametersQuery}}
-            query: {
-                {{#each parametersQuery}}
-                '{{{prop}}}': {{{name}}},
-                {{/each}}
-            },
-            {{/if}}
-            {{#if parametersForm}}
-            formData: {
-                {{#each parametersForm}}
-                '{{{prop}}}': {{{name}}},
-                {{/each}}
-            },
-            {{/if}}
-            {{#if parametersBody}}
-            body: {{{parametersBody.name}}},
-            {{/if}}
-            {{#if responseHeader}}
-            responseHeader: '{{{responseHeader}}}',
-            {{/if}}
-            {{#if errors}}
-            errors: {
-                {{#each errors}}
-                {{{code}}}: `{{{description}}}`,
-                {{/each}}
-            },
-            {{/if}}
-        });
-        return result.body;
-    }
+@Injectable()
+export class {{{name}}} extends RESTDataSource<Context> {
+	{{#if serviceUrlInjectToken}}
+	constructor(@Inject({{{serviceUrlInjectToken}}}) private serviceUrl: string) {
+			super();
+			this.baseURL = this.serviceUrl;
+			// Initialize is required to prime http (fetch)
+			// Cast to any because initialize typings want to force context/cache config which will happen at higher level
+			this.initialize({} as any);
+	}
+	{{/if}}
 
-    {{/each}}
+	{{#each operations}}
+	/**
+	{{#if deprecated}}
+		* @deprecated
+	{{/if}}
+	{{#if summary}}
+		* {{{summary}}}
+	{{/if}}
+	{{#if description}}
+		* {{{description}}}
+	{{/if}}
+	{{#unless @root.useOptions}}
+	{{#if parameters}}
+	{{#each parameters}}
+		* @param {{{name}}} {{{description}}}
+	{{/each}}
+	{{/if}}
+	{{/unless}}
+	{{#each results}}
+		* @returns {{{type}}} {{{description}}}
+	{{/each}}
+		* @throws ApiError
+		*/
+
+	public async {{{name}}}({{>parameters}}): Promise<{{>result}}> {
+		return this.{{{method}}}(`{{{path}}}`,
+			{{#if parametersQuery}}{
+					{{#each parametersQuery}}
+					'{{{prop}}}': {{{name}}},
+					{{/each}}
+			},{{else}}undefined, {{/if}}
+			{
+			{{#if parametersHeader}}
+			headers: {
+					{{#each parametersHeader}}
+					'{{{prop}}}': {{{name}}},
+					{{/each}}
+			},
+			{{/if}}
+			{{#if parametersBody}}
+					body: JSON.stringify({{{parametersBody.name}}}),
+			{{/if}}
+				});
+			{{!-- const result = await __request({
+					method: '{{{method}}}',
+					path: `{{{path}}}`,
+					{{#if parametersCookie}}
+					cookies: {
+							{{#each parametersCookie}}
+							'{{{prop}}}': {{{name}}},
+							{{/each}}
+					},
+					{{/if}}
+					{{#if parametersHeader}}
+					headers: {
+							{{#each parametersHeader}}
+							'{{{prop}}}': {{{name}}},
+							{{/each}}
+					},
+					{{/if}}
+					{{#if parametersQuery}}
+					query: {
+							{{#each parametersQuery}}
+							'{{{prop}}}': {{{name}}},
+							{{/each}}
+					},
+					{{/if}}
+					{{#if parametersForm}}
+					formData: {
+							{{#each parametersForm}}
+							'{{{prop}}}': {{{name}}},
+							{{/each}}
+					},
+					{{/if}}
+					{{#if parametersBody}}
+					body: {{{parametersBody.name}}},
+					{{/if}}
+					{{#if responseHeader}}
+					responseHeader: '{{{responseHeader}}}',
+					{{/if}}
+					{{#if errors}}
+					errors: {
+							{{#each errors}}
+							{{{code}}}: `{{{description}}}`,
+							{{/each}}
+					},
+					{{/if}}
+			});
+			return result.body; --}}
+	}
+
+	{{/each}}
 }
